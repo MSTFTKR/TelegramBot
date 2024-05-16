@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  username    String        @unique
+  chatId      String        @unique
+  email       String        
+  UserDomains UserDomains[]
+}
+
+model Domains {
+  domain_name String        @unique
+  UserDomains UserDomains[]
+  checks      Checks[]
+}
+
+model UserDomains {
+  id Int @unique @default(autoincrement())
+
+  user     Users  @relation(fields: [username], references: [username])
+  username String
+
+  domain      Domains @relation(fields: [domain_name], references: [domain_name])
+  domain_name String
+}
+
+model Checks {
+  id          Int     @unique @default(autoincrement())
+  domains     Domains @relation(fields: [domain_name], references: [domain_name])
+  domain_name String
+  status_code String
+  timestamp   DateTime @default(now())
+}
