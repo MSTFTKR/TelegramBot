@@ -29,7 +29,7 @@ const createUser = async (req, res) => {
 
     if (!user) {
       const newUser = await prisma.users.create({
-        data: {
+        data: {   
           username: username,
           chatId: chatId,
           email: email,
