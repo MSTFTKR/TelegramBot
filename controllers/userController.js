@@ -1,23 +1,22 @@
 const prisma = require("../DB/prisma");
 
-const findUser = async (req, res) => {
-  const { userName } = req.params;
+const findUser = async (userName) => {
   try {
     const user = await prisma.users.findUnique({
       where: {
         username: userName,
       },
     });
-    res.json(user);
+    return user
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return error.message
   }
 };
 
-const createUser = async (req, res) => {
-  const { username, email, chatId } = req.body.data;
+const createUser = async (username, email,chatId) => {
+  
   if (!username || !email || !chatId) {
-    return res.status(400).json({ message: "Invalid request" });
+    return "Invalid request"
   }
 
   try {
@@ -35,18 +34,18 @@ const createUser = async (req, res) => {
           email: email,
         },
       });
-      res.json(newUser);
+      return newUser
     } else {
       throw new Error("Bu username ile zaten bir kullanıcı bulunmaktadır");
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return error.message
   }
 };
-const updateEmail = async (req, res) => {
-  const { userName, eMail } = req.query;
+const updateEmail = async (userName, eMail) => {
+  
   if (!userName || !eMail) {
-    return res.status(400).json({ message: "Invalid request" });
+    return  "Invalid request"
   }
 
   try {
@@ -57,9 +56,9 @@ const updateEmail = async (req, res) => {
         email: eMail,
       },
     });
-    res.json(updateUser);
+    return updateUser
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return error.message
   }
 };
 

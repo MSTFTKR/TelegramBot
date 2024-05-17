@@ -1,9 +1,8 @@
 const prisma = require("../DB/prisma");
 
-const createCheck = async (req, res) => {
-  const { domain_name, status_code, timestamp } = req.body.data;
+const createCheck = async (domain_name,status_code) => {
   if (!domain_name || !status_code) {
-    return res.status(400).json({ message: "Invalid Request" });
+    return  "Invalid Request"
   }
   try {
     const isDomain = await prisma.domains.findUnique({
@@ -16,22 +15,20 @@ const createCheck = async (req, res) => {
       const newCheck = await prisma.checks.create({
         data: {
           domain_name: domain_name,
-          status_code: status_code,
-          timestamp:timestamp,
+          status_code: status_code
         },
       });
-      res.json(newCheck);
+      return newCheck
     } else {
       throw new Error("Domain bulunamadı");
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return error.message 
   }
 };
-const latestcheck = async (req, res) => {
-  const { domainName } = req.query;
+const latestcheck = async (domainName) => {
   if (!domainName ) {
-    return res.status(400).json({ message: "Invalid request" });
+    return "Invalid request"
   }
 
 
@@ -45,11 +42,11 @@ const latestcheck = async (req, res) => {
     }
 })
 if(lastcheck){
-  res.json(lastcheck)
-}else res.json('null')
+  return lastcheck
+}else {return 'null'}
  
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return error.message 
   }
   ;}
 

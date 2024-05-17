@@ -1,10 +1,10 @@
 const prisma = require("../DB/prisma");
 
 
-const createDomain = async (req, res) => {
-  const { username, domain_name } = req.body.data;
+const createDomain = async (username,domain_name) => {
+
   if (!username || !domain_name ) {
-    return res.status(400).json({ message: "Invalid request" });
+    return  "Invalid request"
   }
 
   try {
@@ -23,7 +23,7 @@ const createDomain = async (req, res) => {
         });
         console.log(newDomain, "eklendi");
       } catch (error) {
-        res.status(500).json({ message: error.message });
+        return error.message
       }
     }
 
@@ -42,27 +42,25 @@ const createDomain = async (req, res) => {
             domain_name: domain_name,
           },
         });
-        res.json(newUserDomainRelation);
+        return newUserDomainRelation
       } catch (error) {
-        res.status(500).json({ message: error.message });
+        return error.message
       }
     } else {
       throw new Error("Bu domain bu kullanıcıya zaten eklenmiş");
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return error.message
   }
 };
 
-const deleteDomain = async (req, res) => {
-  const { domainName,userName } = req.query;
+const deleteDomain = async (domainName, userName) => {
   if (!userName || !domainName ) {
-    return res.status(400).json({ message: "Invalid request" });
+    return  "Invalid request" 
   }
 
   try {
       
-
     const domain = await prisma.userDomains.findFirst({
       where: {
         username:userName,
@@ -89,18 +87,17 @@ const deleteDomain = async (req, res) => {
         console.log(deleteDomain,'silindi')
       }
 
-      res.json(deleteData);
+      return deleteData
     }
     
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return error.message
   }
 };
 
-const listDomains = async (req, res) => {
-  const { userName } = req.query;
+const listDomains = async (userName) => {
   if (!userName ) {
-    return res.status(400).json({ message: "Invalid request" });
+    return  "Invalid request"
   }
 
   try {
@@ -116,17 +113,17 @@ const listDomains = async (req, res) => {
   }
   
   const domainNames = userDomains.map(item => item.domain_name);
-  res.json(domainNames)
+  return domainNames
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return error.message
   }
 
 }
 
-const listUsers = async (req, res) => {
-  const { domainName } = req.query;
+const listUsers = async (domainName) => {
+  
   if (!domainName ) {
-    return res.status(400).json({ message: "Invalid request" });
+    return "Invalid request" 
   }
 
   try {
@@ -141,9 +138,9 @@ if(domainUsers.length<1){
 }
 
 const userNames = domainUsers.map(item => item.username);
-res.json(userNames)
+return userNames
 } catch (error) {
-  res.status(500).json({ message: error.message });
+  return error.message
 }
 }
 
@@ -152,9 +149,9 @@ const allListDomains = async (req, res) => {
   try {
     const Domains = await prisma.domains.findMany()
     const listDomains = Domains.map(item => item.domain_name);
-res.json(listDomains)
+return listDomains
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return error.message
   }
 
 }
