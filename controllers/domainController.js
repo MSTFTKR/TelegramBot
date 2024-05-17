@@ -109,19 +109,43 @@ const listDomains = async (req, res) => {
       username:{equals:userName},
     }
   });
+
   
   if(userDomains.length<1){
     throw new Error('Kullanıcıya ait bir domain kaydı bulunmamaktadır')
   }
   
   const domainNames = userDomains.map(item => item.domain_name);
-res.json(domainNames)
+  res.json(domainNames)
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 
 }
 
+const listUsers = async (req, res) => {
+  const { domainName } = req.query;
+  if (!domainName ) {
+    return res.status(400).json({ message: "Invalid request" });
+  }
+
+  try {
+    const domainUsers = await prisma.userDomains.findMany({
+    where: {
+      domain_name:{equals:domainName},
+    }
+  });
+
+if(domainUsers.length<1){
+  throw new Error('Bu domaine ait kullanıcı bulunamadı')
+}
+
+const userNames = domainUsers.map(item => item.username);
+res.json(userNames)
+} catch (error) {
+  res.status(500).json({ message: error.message });
+}
+}
 
 const allListDomains = async (req, res) => {
 
@@ -134,4 +158,4 @@ res.json(listDomains)
   }
 
 }
-module.exports = { createDomain, deleteDomain, listDomains, allListDomains };
+module.exports = { createDomain, deleteDomain, listDomains, allListDomains,listUsers };

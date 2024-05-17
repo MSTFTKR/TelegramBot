@@ -4,6 +4,7 @@ const checkController=require('../controllers/checkController.js')
 
 
 route.post('/create',checkController.createCheck)
+route.get('/latestCheck',checkController.latestcheck)
 
 
 module.exports=route;

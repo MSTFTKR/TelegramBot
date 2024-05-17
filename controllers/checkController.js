@@ -28,5 +28,31 @@ const createCheck = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+const latestcheck = async (req, res) => {
+  const { domainName } = req.query;
+  if (!domainName ) {
+    return res.status(400).json({ message: "Invalid request" });
+  }
 
-module.exports = { createCheck };
+
+  try {
+    const lastcheck = await prisma.checks.findFirst({
+    where: {
+      domain_name: domainName, // Kullanıcının kimliğine göre sorgulama yapın
+    },
+    orderBy: {
+      timestamp: 'desc', // Tarihe göre azalan sırada sıralama yapın
+    }
+})
+if(lastcheck){
+  res.json(lastcheck)
+}else res.json('null')
+ 
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+  ;}
+
+
+
+module.exports = { createCheck,latestcheck };
