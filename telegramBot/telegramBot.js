@@ -3,7 +3,7 @@ const domainControllers = require("../controllers/domainController");
 const userControllers = require("../controllers/userController");
 const sendMail = require("../components/sendEmail");
 const { v4: uuidv4 } = require("uuid");
-const bot = new Telegraf("7169764700:AAHst5K5tBr1g8anxmeTwzylpPeLOtJevCA");
+const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
 const userMailData = {};
 
 const helpMessage="Yapabileceğiniz işlemler:\n /domain_ekle,\n /domain_sil, \n /domain_listele, \n /email_guncelle \n /help "
@@ -14,8 +14,7 @@ const sendMessage = async (username, chatId, subject, message) => {
     userMailData[username] = {};
   }
   userMailData[username][messageId] = { subject, message };
-  // const parsedSubject = JSON.parse(subject);
-  // console.log(username);
+
   await bot.telegram
     .sendMessage(chatId, message, {
       reply_markup: {
@@ -63,10 +62,14 @@ const telegramBot = () => {
     const username = ctx.msg.from.username;
     ctx.reply(`Hoşgeldiniz...`);
     var isUser = await userControllers.findUser(username);
-
+// console.log(isUser)
     if (!isUser) {
       ctx.reply(
         'Lütfen yandaki format ile bir email adresi giriniz. "/registerEmail example@gmail.com" '
+      );
+    }else if(isUser==='Invalid Username'){
+      ctx.reply(
+        'Lütfen önce bir telegram kullanıcı adı oluşturun. Telegram ayarlar kısmında "kullanıcı adı" üstüne basıp oluşturabilirsiniz.'
       );
     }
   });
@@ -179,7 +182,7 @@ const telegramBot = () => {
       } else if (addedDomain === "Bu domain bu kullanıcıya zaten eklenmiş") {
         ctx.reply("Bu domaini daha önce eklediniz");
       } else {
-        ctx.reply("Domain eklenirken hata oluştu");
+        ctx.reply("Domain eklenirken hata oluştu. Kayıt oluşturmadıysanız eğer lütfen önce kayıt oluşturun");
       }
      }else {
       ctx.reply("Lütfen istenilen formatta giriniz. ");
@@ -217,7 +220,7 @@ const telegramBot = () => {
       ) {
         ctx.reply("Bu alan adında kaydınız bulunmamaktadır");
       } else {
-        ctx.reply("Domain silinirken hata oluştu.");
+        ctx.reply("Domain silinirken hata oluştu. Kayıt oluşturmadıysanız eğer lütfen önce kayıt oluşturun");
       }
 
     }else {

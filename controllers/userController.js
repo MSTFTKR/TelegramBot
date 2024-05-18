@@ -9,7 +9,7 @@ const findUser = async (userName) => {
     });
     return user
   } catch (error) {
-    return error.message
+    return 'Invalid Username'
   }
 };
 

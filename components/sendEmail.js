@@ -9,8 +9,8 @@ const sendMail = async (toEmail, subjectContent, mailContent) => {
             secure: false,
             service: "gmail",
             auth: {
-                user: "developerdeneme99@gmail.com",
-                pass: "lahwnaednpwgyenw",
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASSWORD_KEY,
             },
         });
 
