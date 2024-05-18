@@ -10,7 +10,7 @@ const axios = require("axios");
 const cron = require("node-cron");
 
 const queueProcess = async () => {
-  var domains = [];
+
   const queue = new Queue("domainQuery", {
     connection: {
       host: "127.0.0.1",
@@ -18,7 +18,7 @@ const queueProcess = async () => {
     },
   });
 
-  cron.schedule("*/1 8-22 * * *", async () => {
+  cron.schedule("*/15 8-22 * * *", async () => {
     // await queue.obliterate();
     
     domains = await domainControllers.allListDomains();
@@ -66,8 +66,9 @@ const queueProcess = async () => {
         if (response.status) {
             
           const latestCheck = await checkControllers.latestcheck(domain);
-        //   console.log(latestCheck)
+          // console.log(domain)
           if (latestCheck.status_code >= 400) {
+        
             const startDate = moment(latestCheck.timestamp);
             const endDate = moment();
             const difference = moment.duration(endDate.diff(startDate));
@@ -114,9 +115,10 @@ const queueProcess = async () => {
           error.response.status >= 300 &&
           error.response.status < 400
         ) {
-            console.log(domain,'sadas')
           const latestCheck = await checkControllers.latestcheck(domain);
+          // console.log(domain)
           if (latestCheck.status_code >= 400) {
+        
             const startDate = moment(latestCheck.timestamp);
             const endDate = moment();
             const difference = moment.duration(endDate.diff(startDate));
@@ -125,48 +127,52 @@ const queueProcess = async () => {
             const minutes = difference.minutes();
             let messageContent;
             if (days > 0) {
-              messageContent = `${days}Gün, ${hours}Saat, ${minutes} Dakikadır Kapalıydı. Şimdi Tekrar Açıldı`;
+              messageContent = `${domain}, ${days}Gün, ${hours}Saat, ${minutes} Dakikadır Kapalıydı. Şimdi Tekrar Açıldı`;
             } else if (hours > 0) {
-              messageContent = `${hours}Saat, ${minutes} Dakikadır Kapalıydı. Şimdi Tekrar Açıldı`;
+              messageContent = `${domain}, ${hours}Saat, ${minutes} Dakikadır Kapalıydı. Şimdi Tekrar Açıldı`;
             } else {
-              messageContent = `${minutes} Dakikadır Kapalıydı. Şimdi Tekrar Açıldı`;
+              messageContent = `${domain}, ${minutes} Dakikadır Kapalıydı. Şimdi Tekrar Açıldı`;
             }
 
             const listUser = await domainControllers.listUsers(domain);
-            let subject = "Domain Up";
+
             if (Array.isArray(listUser)) {
+              let subject = "Domain Up";
               listUser.forEach(async (user) => {
-                listUser.forEach(async (user) => {
-                  const userInfo = await userControllers.findUser(user);
-                  await telegram.sendMessage(
-                    userInfo.username,
-                    userInfo.chatId,
-                    subject,
-                    messageContent
-                  );
-                });
+                const userInfo = await userControllers.findUser(user);
+                await telegram.sendMessage(
+                  userInfo.username,
+                  userInfo.chatId,
+                  subject,
+                  messageContent
+                );
               });
             }
           }
-
-          await checkControllers.createCheck(domain, error.response.status);
+          
+          let statusCode=response.status.toString();
+          
+          const addStatus = await checkControllers.createCheck(
+            domain,
+            statusCode
+          );
         } else {
-
+          
           if (error.response && error.response.status) {
-
+            
             const latestCheck = await checkControllers.latestcheck(domain);
-
-            if (!latestCheck || latestCheck.status_code < 400) {
+            
+            if (latestCheck==='null' || latestCheck.status_code < 400) {
+              let statusCode=error.response.status.toString();
               if (latestCheck) {
-                await checkControllers.createCheck(domain, error.response.status);
+                await checkControllers.createCheck(domain, statusCode);
               } else {
-                await checkControllers.createCheck(domain, error.response.status);
+                await checkControllers.createCheck(domain, statusCode);
               }
             }
 
             throw new Error();
           } else {
-            console.log(domain,'32qwe4')
             const latestCheck = await checkControllers.latestcheck(domain);
             // console.log(latestCheck)
             if (latestCheck.status_code < 400 || latestCheck==='null') {
@@ -189,8 +195,10 @@ const queueProcess = async () => {
   );
 
   worker.on("failed", async (job) => {
-    const { domain, closedDuration } = job.data;
-
+    const { domain } = job.data;
+    let { closedDuration } = job.data;
+    let domains = await domainControllers.allListDomains();
+    const repDomain = domain.replace(/[^a-zA-Z0-9]/g, "");
     if (domains.includes(domain)) {
       // console.log(`${domain} siteye ulaşılamıyor`);
 
@@ -202,12 +210,15 @@ const queueProcess = async () => {
         const endDate = moment();
         const difference = moment.duration(endDate.diff(startDate));
         const hours = Math.floor(difference.asHours());
-
+        
         if (closedDuration) {
+            closedDuration=parseInt(closedDuration)
           if (hours > closedDuration) {
-            let closedDuration = hours;
+            // console.log(domain)
+            let closedDuration = hours.toString();
             let subject = `Domain Down Time`;
-            let message = `${domain}, ${hours} saattir kapalı`;
+            let message = `${domain}, ${hours} saattir kapalıı`;
+            
             if (Array.isArray(listUser)) {
               listUser.forEach(async (user) => {
                 const userInfo = await userControllers.findUser(user);
@@ -219,7 +230,7 @@ const queueProcess = async () => {
                 );
               });
             }
-            const repDomain = domain.replace(/[^a-zA-Z0-9]/g, "");
+            
             await queue.add(
               "domainQuery",
               { domain, closedDuration },
@@ -231,8 +242,8 @@ const queueProcess = async () => {
               }
             );
           } else {
-            let closedDuration = hours;
-            const repDomain = domain.replace(/[^a-zA-Z0-9]/g, "");
+            closedDuration = hours.toString();
+            // console.log(domain)
             await queue.add(
               "domainQuery",
               { domain, closedDuration },
@@ -245,10 +256,13 @@ const queueProcess = async () => {
             );
           }
         } else {
+          
           if (hours > 0) {
-            let closedDuration = hours;
+            closedDuration = hours.toString();
+            
             let subject = `Domain Down Time`;
             let message = `${domain}, ${hours} saattir kapalı`;
+       
             if (Array.isArray(listUser)) {
               listUser.forEach(async (user) => {
                 const userInfo = await userControllers.findUser(user);
@@ -261,7 +275,6 @@ const queueProcess = async () => {
               });
             }
 
-            const repDomain = domain.replace(/[^a-zA-Z0-9]/g, "");
             await queue.add(
               "domainQuery",
               { domain, closedDuration },
@@ -275,6 +288,7 @@ const queueProcess = async () => {
           } else {
             let subject = `Domain Down`;
             let message = `${domain}, Down`;
+            // console.log(message)
             if (Array.isArray(listUser)) {
               listUser.forEach(async (user) => {
                 const userInfo = await userControllers.findUser(user);
@@ -286,11 +300,11 @@ const queueProcess = async () => {
                 );
               });
             }
-            let closedDuration = 0;
-            const repDomain = domain.replace(/[^a-zA-Z0-9]/g, "");
-            await queue.add(
+            
+            closedDuration = hours.toString();
+           await queue.add(
               "domainQuery",
-              { domain, closedDuration },
+              { domain, closedDuration},
               {
                 delay: 60000,
                 jobId: repDomain,

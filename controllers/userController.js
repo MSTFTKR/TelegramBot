@@ -13,7 +13,7 @@ const findUser = async (userName) => {
   }
 };
 
-const createUser = async (username, email,chatId) => {
+const createUser = async (username, chatId, email) => {
   
   if (!username || !email || !chatId) {
     return "Invalid request"

@@ -21,7 +21,7 @@ const createDomain = async (username,domain_name) => {
             domain_name: domain_name,
           },
         });
-        console.log(newDomain, "eklendi");
+        // console.log(newDomain, "eklendi");
       } catch (error) {
         return error.message
       }
@@ -54,11 +54,11 @@ const createDomain = async (username,domain_name) => {
   }
 };
 
-const deleteDomain = async (domainName, userName) => {
+const deleteDomain = async ( userName,domainName) => {
   if (!userName || !domainName ) {
     return  "Invalid request" 
   }
-
+  
   try {
       
     const domain = await prisma.userDomains.findFirst({
@@ -81,10 +81,15 @@ const deleteDomain = async (domainName, userName) => {
         }
       });
       if(!isDomain){
+        await prisma.checks.deleteMany({
+          where: {
+            domain_name:domainName
+          },
+        });
         const deleteDomain = await prisma.domains.delete({
           where: { domain_name:domainName },
         });
-        console.log(deleteDomain,'silindi')
+        // console.log(deleteDomain,'silindi')
       }
 
       return deleteData

@@ -9,11 +9,10 @@ const queue=require('./queueWorker/queue')
 const main = () => {
   telegram.telegramBot();
   queue.queueProcess();
-
 };
 
-
 main();
+
 
 
 
@@ -25,7 +24,6 @@ app.use(cors());
 app.options("*", cors());
 app.use(express.json());
 app.use("/", routes)
-
 
 app.get("*", (req, res) => {
   res.status(404).send("Not Found");

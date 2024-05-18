@@ -5,6 +5,9 @@ const sendMail = require("../components/sendEmail");
 const { v4: uuidv4 } = require("uuid");
 const bot = new Telegraf("7169764700:AAHst5K5tBr1g8anxmeTwzylpPeLOtJevCA");
 const userMailData = {};
+
+const helpMessage="Yapabileceğiniz işlemler:\n /domain_ekle,\n /domain_sil, \n /domain_listele, \n /email_guncelle \n /help "
+
 const sendMessage = async (username, chatId, subject, message) => {
   const messageId = uuidv4();
   if (!userMailData[username]) {
@@ -34,12 +37,12 @@ const sendMessage = async (username, chatId, subject, message) => {
   bot.action(/^sendMailer:/, async (ctx) => {
     const username = await ctx.callbackQuery.data.split(":")[1];
     const messageId = await ctx.callbackQuery.data.split(":")[2];
-    console.log(username);
+    // console.log(username);
 
     const { subject, message } = userMailData[username][messageId];
 
     var isUser = await userControllers.findUser(username);
-    console.log(isUser);
+    // console.log(isUser);
     await sendMail
       .sendMail(isUser.email, subject, message)
       .then((response) => {
@@ -73,29 +76,40 @@ const telegramBot = () => {
     let chatId = ctx.chat.id.toString();
     let msg = ctx.message.text;
     let msgArray = msg.split(" ");
-    const addUser = await userControllers.createUser(
-      username,
-      chatId,
-      msgArray[msgArray.length - 1]
-    );
-    console.log(addUser);
-    if (addUser) {
-      ctx.reply("Email Başarıyla Eklendi");
-      ctx.reply(
-        "Yapabileceğiniz işlemler:\n /domain_ekle,\n /domain_sil, \n /domain_listele, \n /email_guncelle \n /help "
+    const emailRegex =
+      /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    const emailFormat = emailRegex.test(msgArray[msgArray.length - 1]);
+    if (emailFormat&&msgArray.length===2) {
+      const addUser = await userControllers.createUser(
+        username,
+        chatId,
+        msgArray[msgArray.length - 1]
       );
+      if (addUser.username) {
+        ctx.reply("Email Başarıyla Eklendi");
+
+        ctx.reply(
+          `${helpMessage}`
+        );
+      } else {
+        ctx.reply("Zaten kayıtlısınız. Güncellemek isterseniz /email_guncelle komutunu kullanabilirsiniz.");
+
+        ctx.reply(
+          `${helpMessage}`
+        );
+      }
     } else {
-      ctx.reply("Email eklenirken hata oluştu.");
+      ctx.reply("Lütfen Emailinizi belirtilen şekilde doğru giriniz");
     }
   });
 
   bot.help((ctx) => {
     ctx.reply(
-      "Yapabileceğiniz işlemler:\n /domain_ekle,\n /domain_sil, \n /domain_listele \n /email_guncelle \n /help "
+      `${helpMessage}`
     );
   });
 
-  const userMailData = {}; 
+  const userMailData = {};
 
   bot.command("domain_listele", async (ctx) => {
     var username = ctx.from.username;
@@ -130,7 +144,7 @@ const telegramBot = () => {
   bot.action(/^sendMail:/, async (ctx) => {
     const username = ctx.from.username;
     var isUser = await userControllers.findUser(username);
-    console.log(isUser);
+    // console.log(isUser);
     const { subject, message } = userMailData[username] || {};
     await sendMail
       .sendMail(isUser.email, subject, message)
@@ -152,17 +166,26 @@ const telegramBot = () => {
     const username = ctx.message.from.username;
     let msg = ctx.message.text;
     let msgArray = msg.split(" ");
-    let addedDomain = await domainControllers.createDomain(
-      username,
-      msgArray[msgArray.length - 1]
-    );
-    if (addedDomain.id) {
-      ctx.reply("Domain Başarıyla Eklendi.");
-    } else if (addedDomain === "Bu domain bu kullanıcıya zaten eklenmiş") {
-      ctx.reply("Bu domaini daha önce eklediniz");
-    } else {
-      ctx.reply("Domain eklenirken hata oluştu");
-    }
+    const domainRegex =/^(?!www\.|http:\/\/|https:\/\/)(?!-)[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*(?<!-)\.[A-Za-z]{2,}(\/[A-Za-z0-9-]+)*\/?$/;
+    const domainFormat = domainRegex.test(msgArray[msgArray.length - 1]);
+     
+    if (domainFormat&&msgArray.length===2) {
+      let addedDomain = await domainControllers.createDomain(
+        username,
+        msgArray[msgArray.length - 1]
+      );
+      if (addedDomain.id) {
+        ctx.reply("Domain Başarıyla Eklendi.");
+      } else if (addedDomain === "Bu domain bu kullanıcıya zaten eklenmiş") {
+        ctx.reply("Bu domaini daha önce eklediniz");
+      } else {
+        ctx.reply("Domain eklenirken hata oluştu");
+      }
+     }else {
+      ctx.reply("Lütfen istenilen formatta giriniz. ");
+     }
+
+    
   });
 
   bot.command("domain_sil", async (ctx) => {
@@ -176,20 +199,32 @@ const telegramBot = () => {
     let msg = ctx.message.text;
     let msgArray = msg.split(" ");
     msgArray[msgArray.length - 1];
-    let deletedDomain = await domainControllers.deleteDomain(
-      username,
-      msgArray[msgArray.length - 1]
-    );
-    if (deletedDomain.id) {
-      ctx.reply("Domain Başarıyla silindi.");
-    } else if (
-      deletedDomain ===
-      "Kullanıcıya ait bu alan adı ile bir domain kaydı bulunmamaktadır"
-    ) {
-      ctx.reply("Bu alan adında kaydınız bulunmamaktadır");
-    } else {
-      ctx.reply("Domain silinirken hata oluştu.");
+
+    const domainRegex =/^(?!www\.|http:\/\/|https:\/\/)(?!-)[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*(?<!-)\.[A-Za-z]{2,}(\/[A-Za-z0-9-]+)*\/?$/;
+    const domainFormat = domainRegex.test(msgArray[msgArray.length - 1]);
+     
+    if (domainFormat&&msgArray.length===2) {
+      let deletedDomain = await domainControllers.deleteDomain(
+        username,
+        msgArray[msgArray.length - 1]
+      );
+  
+      if (deletedDomain.id) {
+        ctx.reply("Domain Başarıyla silindi.");
+      } else if (
+        deletedDomain ===
+        "Kullanıcıya ait bu alan adı ile bir domain kaydı bulunmamaktadır"
+      ) {
+        ctx.reply("Bu alan adında kaydınız bulunmamaktadır");
+      } else {
+        ctx.reply("Domain silinirken hata oluştu.");
+      }
+
+    }else {
+      ctx.reply("Lütfen istenilen formatta giriniz. ");
     }
+
+   
   });
 
   bot.command("email_guncelle", async (ctx) => {
@@ -202,18 +237,30 @@ const telegramBot = () => {
     const username = ctx.message.from.username;
     let msg = ctx.message.text;
     let msgArray = msg.split(" ");
-
-    let updateEmail = await userControllers.updateEmail(
+    const emailRegex =
+    /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  const emailFormat = emailRegex.test(msgArray[msgArray.length - 1]);
+  if (emailFormat&&msgArray.length===2) {
+let updateEmail = await userControllers.updateEmail(
       username,
       msgArray[msgArray.length - 1]
     );
-    console.log(updateEmail);
+    // console.log(updateEmail);
     if (updateEmail) {
       ctx.reply("Email Başarıyla Güncellendi.");
     } else {
       ctx.reply("Email güncellenirken hata oluştu");
     }
+    
+  }else {
+    ctx.reply("Güncellenirken hata oluştu. Lütfen istenilen formatta giriniz ");
+  }
+    
   });
+ 
+  bot.on('text', (ctx) => {
+    ctx.reply(`Lütfen geçerli bir işlem seçin \n ${helpMessage}`);
+});
 
   bot.launch();
 };
